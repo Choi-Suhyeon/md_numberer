@@ -1,6 +1,6 @@
 use std::io::{Read, Write};
-use std::process::exit;
-use std::fs::File;
+use std::fs::{self, File};
+use std::error::Error;
 use std::env;
 
 trait MdNumberer {
@@ -73,28 +73,28 @@ impl MdNumberer for Vec<String> {
     }
 }
 
-fn main() {
-    let mut args = env::args().skip(1);
+fn apply_toc_to_dir(target_dir: String) -> Result<(), Box<dyn Error>> {
+    let paths = fs::read_dir(target_dir)?;
 
-    let target_path = args.next();
-
-    if target_path.is_none() || args.count() != 0 {
-        panic!("invalid format\nsyntax : md_numberer <FILE_PATH>\nsample : md_numberer test.md");
+    for path in paths {
+        let _ = apply_toc(path?.path().to_str().unwrap().to_owned());
     }
 
+    Ok(())
+}
+
+fn apply_toc(target_path: String) -> Result<(), Box<dyn Error>> {
     let mark_comment = String::from("<!--worked by md_numberer. DO NOT EDIT this line-->");
-    let target_path  = target_path.unwrap();
 
     if &target_path[target_path.len() - 3 ..] != ".md" {
-        panic!("invalid file path");
+        return Err(Box::from("is not a markdown file"));
     }
 
-    let mut file     = File::open(target_path.clone()).expect("failed to open the file");
+    let mut file     = File::open(target_path.clone())?;
     let mut contents = String::new();
 
     file
-        .read_to_string(&mut contents)
-        .expect("failed to read the file");
+        .read_to_string(&mut contents)?;
 
     let mut contents = contents
         .split('\n')
@@ -102,7 +102,7 @@ fn main() {
         .collect::<Vec<String>>();
 
     if contents.is_empty() {
-        exit(0);
+        return Err(Box::from("file has no content"));
     }
 
     if contents.last().unwrap() == &mark_comment {
@@ -114,11 +114,31 @@ fn main() {
 
     contents.add_prefix_number();
 
-    let mut file = File::create(target_path).expect("failed to open the file");
+    let mut file = File::create(target_path)?;
 
     file.write_all(contents
         .join("\n")
         .as_bytes()
-    )
-        .expect("failed to write the file");
+    )?;
+
+    Ok(())
+}
+
+fn main() {
+    let mut args = env::args().skip(1);
+
+    let is_dir = match args.next() {
+        Some(x) if &x == "--directory" => true,
+        Some(x) if &x == "--file" => false,
+        _ => panic!("invalid format"),
+    };
+    let target_path = args.next();
+
+    if target_path.is_none() || args.count() != 0 {
+        panic!("invalid format");
+    }
+
+    let target_path  = target_path.unwrap();
+
+    (if is_dir { apply_toc_to_dir } else { apply_toc })(target_path).unwrap();
 }
