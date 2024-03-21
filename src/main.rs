@@ -225,11 +225,11 @@ fn main() {
                     .expect("parameter format is illegal")
             },
             None => {
-                if (0..=1).contains(&starting_num) || (1..=6).contains(&limit) {
-                    break;
+                if !(0..=1).contains(&starting_num) || !(1..=6).contains(&limit) {
+                    panic!("parameter range is illegal");
                 }
 
-                panic!("parameter range is illegal");
+                break;
             },
         }
     }
