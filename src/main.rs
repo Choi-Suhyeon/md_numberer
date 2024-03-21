@@ -5,7 +5,7 @@ use std::process::exit;
 use std::error::Error;
 use std::env;
 
-type GenericError = Box<dyn Error + Send + Sync + 'static>;
+type GenericError     = Box<dyn Error + Send + Sync + 'static>;
 type GenericResult<T> = Result<T, GenericError>;
 
 #[derive(Debug, Clone)]
@@ -114,7 +114,7 @@ fn apply_number_to_dir(target_dir: String, limit: usize, starting_num: usize) ->
             .to_owned();
 
         match apply_number(path.clone(), limit, starting_num) {
-            Ok(()) => continue,
+            Ok(())   => continue,
             Err(err) => {
                 if let Some(_) = err.downcast_ref::<MarkdownNotFoundError>() {
                     continue;
@@ -193,14 +193,14 @@ fn print_help(file_name: String) {
 }
 
 fn main() {
-    let mut args = env::args();
-    let mut limit = 1;
+    let mut args         = env::args();
+    let mut limit        = 1;
     let mut starting_num = 1;
 
-    let file_name = args.next().unwrap();
-    let is_dir = match args.next() {
-        Some(x) if &x == "--directory" => true,
-        Some(x) if &x == "--file" => false,
+    let file_name   = args.next().unwrap();
+    let is_dir      = match args.next() {
+        Some(x) if &x == "--directory"          => true,
+        Some(x) if &x == "--file"               => false,
         Some(x) if &x == "-h" || &x == "--help" => {
             print_help(file_name);
             exit(0);
@@ -217,14 +217,14 @@ fn main() {
                 *match &*x {
                     "-l" => &mut limit,
                     "-s" => &mut starting_num,
-                    _ => panic!("illegal option is given"),
+                    _    => panic!("illegal option is given"),
                 } = args
                     .next()
                     .expect("option is given without a parameter")
                     .parse()
                     .expect("parameter format is illegal")
             },
-            None => {
+            None    => {
                 if !(0..=1).contains(&starting_num) || !(1..=6).contains(&limit) {
                     panic!("parameter range is illegal");
                 }
@@ -235,7 +235,7 @@ fn main() {
     }
 
     match (if is_dir { apply_number_to_dir } else { apply_number })(target_path.clone(), limit, starting_num) {
-        Ok(()) => (),
+        Ok(())   => (),
         Err(err) => {
             let msg_string =
                 if let Some(msg) = err.downcast_ref::<MarkdownNotFoundError>() {
